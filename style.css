@@ -1,37 +1,46 @@
-:root { --fuego: #FF4500; --oro: #FFD700; --carbon: #080808; }
-body { background: var(--carbon); color: white; font-family: 'Montserrat', sans-serif; margin: 0; display: flex; justify-content: center; }
-.main-wrapper { width: 100%; max-width: 400px; padding: 20px; }
+:root { --fuego: #FF4500; --oro: #FFD700; --carbon: #080808; --resplandor: rgba(255, 69, 0, 0.2); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+body { background-color: var(--carbon); color: white; font-family: 'Montserrat', sans-serif; margin: 0; overflow-x: hidden; }
 
-.header-fest { text-align: center; margin-bottom: 20px; }
-.logo-principal { width: 60px; margin-bottom: 10px; }
+/* EFECTOS DE FONDO */
+.main-wrapper { min-height: 100vh; display: flex; justify-content: center; position: relative; padding: 20px; z-index: 10; }
+.vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, transparent 30%, black 140%); z-index: 2; pointer-events: none; }
+.smoke-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png'); opacity: 0.4; z-index: 1; pointer-events: none; }
+.ember-glow { position: fixed; bottom: -15%; left: 50%; transform: translateX(-50%); width: 130%; height: 50%; background: radial-gradient(ellipse at center, var(--resplandor) 0%, transparent 70%); z-index: 1; pointer-events: none; filter: blur(60px); }
+.fire-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(circle, var(--oro) 0.5px, transparent 1px); background-size: 60px 60px; opacity: 0.1; animation: moveUp 25s linear infinite; z-index: 1; pointer-events: none; }
+@keyframes moveUp { from { background-position: 0 0; } to { background-position: 0 -1000px; } }
 
-/* Logo Dinámico */
-.logo-rest-wrap { 
-    width: 90px; height: 90px; margin: 10px auto; border-radius: 50%; 
-    border: 3px solid #333; overflow: hidden; background: #000; transition: 0.3s;
-}
-.logo-rest-wrap img { width: 100%; height: 100%; object-fit: cover; }
+/* UI COMPONENTS */
+.progress-bar { position: fixed; top: 0; left: 0; height: 4px; background: var(--oro); width: 33%; z-index: 1000; transition: 0.8s; box-shadow: 0 0 15px var(--oro); }
+.container { width: 100%; max-width: 400px; text-align: center; position: relative; z-index: 20; }
+.logo-principal { width: 100px; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); margin-bottom: 5px; }
+#votos-info { color: var(--oro); font-weight: 900; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; }
 
-/* Estilo Especial Campeón */
-.is-campeon-vote { border: 4px solid var(--oro) !important; box-shadow: 0 0 20px rgba(255,215,0,0.4); position: relative; }
-.is-campeon-vote::after { content: '👑'; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 25px; }
-.text-campeon { color: var(--oro) !important; font-weight: 900; text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+.card-premium { background: rgba(10, 10, 10, 0.9); border: 1px solid #222; border-radius: 35px; padding: 40px 25px; backdrop-filter: blur(15px); box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
 
-.card-premium { background: #111; border-radius: 30px; padding: 30px 20px; text-align: center; border: 1px solid #222; }
-.form-group input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; font-family: 'Montserrat'; }
+.form-group input { width: 100%; padding: 18px; margin-bottom: 15px; background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 15px; color: white; text-align: center; font-size: 16px; font-weight: bold; transition: 0.3s; }
+.form-group input:focus { border-color: var(--oro); background: #000; }
 
-.stars { font-size: 45px; color: #222; cursor: pointer; margin-bottom: 10px; }
-.stars span.active { color: var(--oro); text-shadow: 0 0 15px var(--oro); }
+.btn-action { width: 100%; padding: 18px; background: var(--fuego); border: none; border-radius: 15px; color: white; font-weight: 900; cursor: pointer; font-size: 14px; letter-spacing: 1px; transition: 0.3s; }
+.btn-action:disabled { opacity: 0.15; cursor: not-allowed; }
+.btn-action.gold { background: linear-gradient(45deg, var(--oro), #FF8C00); color: black; font-weight: 900; }
 
-.btn-action { width: 100%; background: var(--fuego); color: white; border: none; padding: 18px; border-radius: 15px; font-weight: 900; cursor: pointer; }
-.btn-action.gold { background: var(--oro); color: black; }
-.btn-action:disabled { opacity: 0.3; cursor: not-allowed; }
+.stars { font-size: 50px; margin: 15px 0; }
+.stars span { color: #1a1a1a; cursor: pointer; transition: 0.2s; display: inline-block; }
+.stars span.active { color: var(--oro); text-shadow: 0 0 25px var(--fuego); transform: scale(1.15); }
+#rating-label { font-weight: 900; color: var(--oro); height: 25px; margin-bottom: 20px; font-size: 14px; }
 
-.progress-bar { position: fixed; top: 0; left: 0; height: 4px; background: var(--fuego); width: 33%; transition: 0.5s; z-index: 1000; }
-.fade-in { animation: fadeIn 0.5s; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+/* TICKET CARBÓN VIP */
+.ticket-final { position: relative; background: #0d0d0d; color: #fff; padding: 45px 25px; border-radius: 25px 25px 0 0; border: 1px solid #222; overflow: hidden; }
+.ticket-final::after { content: ""; position: absolute; bottom: -15px; left: 0; width: 100%; height: 15px; background: linear-gradient(-45deg, transparent 8px, #0d0d0d 8px), linear-gradient(45deg, transparent 8px, #0d0d0d 8px); background-size: 16px 32px; }
+.calificacion-box { background: #000; padding: 30px; border-radius: 30px; margin: 25px 0; border: 1px solid #1a1a1a; }
+#id-label { display: inline-block; border: 2px solid var(--oro); color: var(--oro); padding: 10px 30px; font-family: 'Courier Prime', monospace; font-size: 26px; font-weight: 900; margin: 20px 0; }
 
-/* Ticket final */
-.ticket-final { text-align: center; padding: 10px; }
-.big-score { font-size: 70px; font-weight: 900; color: var(--oro); margin: 10px 0; }
-.id-badge { background: var(--oro); color: black; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: 900; margin-bottom: 20px; }
+.btn-util { width: 100%; padding: 18px; border-radius: 50px; border: none; font-weight: 900; margin-top: 15px; cursor: pointer; font-size: 12px; }
+.fade-in { animation: fadeIn 0.8s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+.loading-text { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.footer-simple { margin-top: 40px; font-size: 10px; color: #444; font-weight: bold; }
+.hide-for-snap.is-hidden { opacity: 0 !important; }
