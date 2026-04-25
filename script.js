@@ -1,23 +1,14 @@
-/**
- * PLANADAS BURGER FEST 2026 - LOGIC ENGINE
- * Desarrollado para: Viaja por Planadas
- */
-
-// 1. CONFIGURACIÓN FIREBASE
+// CONFIGURACIÓN DE FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyCwcCFXtJqWL55ExHFDti3G3Ri18mvNJuU",
     authDomain: "burguerfest.firebaseapp.com",
     projectId: "burguerfest",
     databaseURL: "https://burguerfest-default-rtdb.firebaseio.com/"
 };
-
-// Inicializar Firebase
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// 2. BASE DE DATOS LOCAL DE RESTAURANTES
+// BASE DE DATOS DE RESTAURANTES
 const restaurantes = {
     "1": { nombre: "LA OBSESIÓN", logo: "laobcecion.png" },
     "2": { nombre: "MISTER HONGO", logo: "MISTERHONGO.png" },
@@ -29,211 +20,138 @@ const restaurantes = {
     "8": { nombre: "PEDREGAL", logo: "PEDREGAL.png" }
 };
 
-// 3. VARIABLES DE ESTADO GLOBAL
+// CAPTURA DE PARÁMETROS URL
 const urlParams = new URLSearchParams(window.location.search);
-let restID = urlParams.get('rest') || "1"; // Por defecto el 1 si no hay ID
+let restID = urlParams.get('rest') || "1";
 const datosRest = restaurantes[restID] || restaurantes["1"];
 let ratingActual = 0;
 
-// 4. INICIALIZACIÓN AL CARGAR LA PÁGINA
+// INICIALIZACIÓN DE LA PÁGINA
 document.addEventListener('DOMContentLoaded', () => {
-    // Setea el nombre del restaurante en la UI
-    const restNameElement = document.getElementById('rest-name');
-    if (restNameElement) restNameElement.innerText = datosRest.nombre;
-
-    // Escucha en tiempo real los votos de este restaurante específico
-    database.ref('contadores/' + restID).on('value', (snap) => {
-        const votosInfo = document.getElementById('votos-info');
-        if (votosInfo) {
-            votosInfo.innerText = `🔥 ${snap.val() || 0} JURADOS HAN CALIFICADO AQUÍ`;
-        }
+    document.getElementById('rest-name').innerText = datosRest.nombre;
+    document.getElementById('logo-rest-img').src = datosRest.logo;
+    
+    // Escuchar contador de votos en tiempo real
+    database.ref('contadores/' + restID).on('value', snap => {
+        const totalVotos = snap.val() || 0;
+        document.getElementById('votos-info').innerText = `🔥 ${totalVotos} JURADOS HAN CALIFICADO AQUÍ`;
     });
-
-    // Verificar si el usuario ya votó en este restaurante (Persistencia local)
-    const votoGuardado = localStorage.getItem(`voto_${restID}`);
-    if (votoGuardado) {
-        const d = JSON.parse(votoGuardado);
-        mostrarTicketFinal(d.nombre, d.puntos, d.jurado);
-    }
 });
 
-// 5. VALIDACIÓN DEL TICKET
+// PASO 1: VALIDAR INGRESO CON CÓDIGO
 async function validarIngreso() {
-    const codeInput = document.getElementById('code');
-    const code = codeInput.value.trim().toUpperCase();
-    const btn = document.getElementById('btn-validar');
-
-    if (code.length < 4) {
-        alert("Por favor ingresa un código de ticket válido.");
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerText = "VERIFICANDO...";
-
+    const code = document.getElementById('code').value.trim().toUpperCase();
+    if(!code) return alert("Ingresa tu código");
+    
     try {
         const snap = await database.ref('codigos_validos/' + code).once('value');
-        const estado = snap.val();
-
-        if (estado === "disponible") {
-            // Transición a la sección de votación
+        if (snap.val() === "disponible") {
             document.getElementById('login-section').style.display = 'none';
             document.getElementById('vote-section').style.display = 'block';
             document.getElementById('p-bar').style.width = "66%";
-        } else if (estado === "usado") {
-            alert("Este código ya fue utilizado anteriormente.");
-            btn.disabled = false;
-            btn.innerText = "ENTRAR A VOTAR 🔥";
         } else {
-            alert("Código no encontrado. Verifica el código de tu ticket físico.");
-            btn.disabled = false;
-            btn.innerText = "ENTRAR A VOTAR 🔥";
+            alert("Código inválido o ya usado.");
         }
-    } catch (error) {
-        console.error(error);
-        alert("Error de conexión. Intenta de nuevo.");
-        btn.disabled = false;
+    } catch(e) { 
+        console.error(e);
+        alert("Error de conexión: Revisa tus reglas de Firebase."); 
     }
 }
 
-// 6. SISTEMA DE CALIFICACIÓN (ESTRELLAS)
+// PASO 2: SELECCIÓN DE ESTRELLAS
 function setRating(n) {
     ratingActual = n;
-    const estrellas = document.querySelectorAll('.stars span');
-    estrellas.forEach((s, i) => {
+    document.querySelectorAll('.stars span').forEach((s, i) => {
         s.classList.toggle('active', i < n);
     });
-    
-    const label = document.getElementById('rating-label');
-    const frases = ["", "¡Podría mejorar! 🤔", "¡Está buena! 👍", "¡Muy sabrosa! 🔥", "¡Excelente sabor! 🍔", "¡La mejor que he probado! 🏆"];
-    label.innerText = frases[n];
-    label.style.color = "#FFD700";
-
     document.getElementById('btn-votar').disabled = false;
 }
 
-// 7. ENVÍO DE VOTO A FIREBASE
+// PASO 3: ENVIAR VOTO Y ACTUALIZAR DB
 async function enviarVoto() {
     const name = document.getElementById('username').value.trim();
     const phone = document.getElementById('phone').value.trim();
     const code = document.getElementById('code').value.trim().toUpperCase();
 
-    if (!name || phone.length < 10) {
-        alert("Por favor completa tu nombre y un celular válido.");
-        return;
-    }
+    if (!name || phone.length < 10) return alert("Por favor, completa tus datos correctamente.");
 
-    const btnVotar = document.getElementById('btn-votar');
-    btnVotar.disabled = true;
-    btnVotar.innerText = "REGISTRANDO VOTO...";
+    const btn = document.getElementById('btn-votar');
+    btn.disabled = true;
+    btn.innerText = "PROCESANDO VOTO...";
 
-    // Verificar si el teléfono ya votó en este restaurante específico
-    const checkVoto = await database.ref('votos/' + restID + '/' + phone).once('value');
-    if (checkVoto.exists()) {
-        alert("Ya registraste un voto para este restaurante con este número.");
-        btnVotar.disabled = false;
-        return;
-    }
-
-    // Proceso de votación con Transacción (Para evitar errores de conteo simultáneo)
-    database.ref('contadores/' + restID).transaction((actual) => {
-        return (actual || 0) + 1;
-    }, async (error, committed, snapshot) => {
-        if (committed) {
-            const numeroJurado = snapshot.val();
-            const juradoID = "PLN-" + String(numeroJurado).padStart(3, '0');
-
-            // Guardar datos del voto
-            const datosVoto = {
-                nombre: name,
-                celular: phone,
-                puntos: ratingActual,
-                jurado: juradoID,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+    // Transacción para contador exacto
+    database.ref('contadores/' + restID).transaction(c => (c || 0) + 1, (err, comm, snap) => {
+        if (comm) {
+            const juradoID = "PLN-" + String(snap.val()).padStart(4, '0');
+            const updates = {};
+            updates[`votos/${restID}/${phone}`] = { 
+                nombre: name, 
+                puntos: ratingActual, 
+                fecha: new Date().toISOString() 
             };
+            updates[`codigos_validos/${code}`] = "usado";
 
-            await database.ref('votos/' + restID + '/' + phone).set(datosVoto);
-            
-            // Marcar código como usado
-            await database.ref('codigos_validos/' + code).set("usado");
-
-            // Guardar en persistencia local
-            localStorage.setItem(`voto_${restID}`, JSON.stringify(datosVoto));
-
-            // Verificar si completó los 8 restaurantes
-            verificarRutaCompleta(phone, name);
-
-            // Mostrar el ticket final
-            mostrarTicketFinal(name, ratingActual, juradoID);
+            database.ref().update(updates)
+                .then(() => mostrarTicketFinal(name, ratingActual, juradoID))
+                .catch(error => {
+                    console.error("Error en update:", error);
+                    alert("Error al guardar el voto. Verifica los permisos de escritura."); //
+                });
         }
     });
 }
 
-// 8. VERIFICACIÓN DE RUTA DE LOS 8
-async function verificarRutaCompleta(phone, name) {
-    let localesVisitados = 0;
-    const ids = Object.keys(restaurantes);
-
-    for (let id of ids) {
-        const v = await database.ref('votos/' + id + '/' + phone).once('value');
-        if (v.exists()) localesVisitados++;
-    }
-
-    if (localesVisitados === 8) {
-        alert(`🏆 ¡INCREÍBLE ${name.toUpperCase()}! 🏆\nHas completado la ruta de los 8 restaurantes del Fest. ¡Eres un catador oficial de Planadas!`);
-    }
-}
-
-// 9. RENDERIZADO DEL TICKET FINAL
+// PASO 4: MOSTRAR TICKET Y REDIRECCIÓN
 function mostrarTicketFinal(name, puntos, id) {
-    // Animación de confeti
-    confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#FF4500', '#FFD700', '#FFFFFF']
+    // Animación de celebración
+    confetti({ 
+        particleCount: 150, 
+        spread: 70, 
+        origin: { y: 0.6 }, 
+        colors: ['#FF4500', '#FFD700'] 
     });
+    
+    const ahora = new Date();
+    const fecha = ahora.toLocaleDateString();
+    const hora = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    // Mensaje para compartir
-    const textoCompartir = `¡Acabo de ser jurado del Planadas Burger Fest 2026! 🍔🔥 Califiqué a ${datosRest.nombre} con ${puntos} estrellas. Mi ID de jurado es ${id}. ¡Pide la tuya y vota también!`;
-    const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(textoCompartir)}`;
+    const textoWA = `🍔 ¡Acabo de calificar la hamburguesa de *${datosRest.nombre}* en el Burger Fest 2026! \n\nMi nota como jurado: *${puntos}.0/5.0* ⭐ \n\n¡Está brutal, tienes que probarla! 🔥🤤`;
+    const waLink = `https://wa.me/?text=${encodeURIComponent(textoWA)}`;
 
-    const mainCard = document.getElementById('main-card');
-    mainCard.innerHTML = `
-        <div class="ticket-final fade-in">
-            <div class="ticket-header">
-                <img src="${datosRest.logo}" alt="Logo Rest" class="logo-ticket">
-                <p class="ticket-status">VOTO CONFIRMADO</p>
+    // Reemplazo de contenido con Ticket Final
+    document.getElementById('main-card').innerHTML = `
+        <div class="ticket-capture fade-in" style="background:#fff; color:#000; border-radius:25px; overflow:hidden;">
+            <div style="background:#000; padding:20px; text-align:center; border-bottom:3px solid #FFD700;">
+                <img src="Logo.png" style="width:35px; margin-bottom:5px;"><br>
+                <span style="letter-spacing:3px; font-size:10px; color:#FFD700; font-weight:900;">JURADO CALIFICADOR 2026</span>
             </div>
-            
-            <div class="ticket-body">
-                <p class="label-ticket">JURADO CALIFICADOR</p>
-                <h3 class="name-ticket">${name.toUpperCase()}</h3>
+            <div style="padding:35px 20px; text-align:center; background-image: radial-gradient(#ddd 1.5px, transparent 1.5px); background-size: 20px 20px;">
+                <img src="${datosRest.logo}" style="width:85px; height:85px; border-radius:50%; border:3px solid #000; margin-bottom:15px; object-fit:cover;">
+                <h2 style="font-size:22px; font-weight:900; margin:0; text-transform:uppercase;">${datosRest.nombre}</h2>
+                <p style="margin:25px 0 5px 0; font-size:9px; color:#999;">CERTIFICADO EMITIDO A:</p>
+                <h2 style="margin:0 0 25px 0; font-size:26px; color:#e64a19; font-weight:900; text-transform:uppercase;">${name}</h2>
                 
-                <div class="score-display">
-                    <p>CALIFICACIÓN</p>
-                    <div class="big-score">${puntos}.0</div>
+                <div style="background:#000; color:#fff; padding:25px; border-radius:22px; width:80%; margin:0 auto;">
+                    <span style="font-size:65px; font-weight:900; color:#FFD700; line-height:1;">${puntos}.0</span>
+                    <span style="font-size:35px; color:#FFD700;">★</span>
+                    <p style="margin:5px 0 0 0; font-size:9px; letter-spacing:2px; font-weight:700; opacity:0.8;">PUNTUACIÓN FINAL</p>
                 </div>
 
-                <div class="id-badge">${id}</div>
-                <p class="rest-tag">@ ${datosRest.nombre}</p>
+                <div style="display:flex; justify-content:space-between; margin-top:30px; border-top:1px dashed #bbb; padding-top:20px;">
+                    <div style="text-align:left;"><small style="color:#999; display:block; font-size:8px;">ID VOTO</small><strong>#${id}</strong></div>
+                    <div style="text-align:center;"><small style="color:#999; display:block; font-size:8px;">FECHA</small><strong>${fecha}</strong></div>
+                    <div style="text-align:right;"><small style="color:#999; display:block; font-size:8px;">HORA</small><strong>${hora}</strong></div>
+                </div>
             </div>
+            <div style="height:15px; background-image: radial-gradient(circle at 10px 15px, transparent 12px, #fff 13px); background-size: 20px 15px; background-repeat: repeat-x;"></div>
+        </div>
 
-            <div class="ticket-actions">
-                <a href="${urlWhatsApp}" target="_blank" class="btn-share">
-                    COMPARTIR EN WHATSAPP 📱
-                </a>
-                <button onclick="window.location.href='index.html'" class="btn-back">
-                    VOLVER AL INICIO
-                </button>
-            </div>
+        <div style="margin-top:25px; display:flex; flex-direction:column; gap:12px;">
+            <p style="color:#FFD700; font-size:11px; font-weight:700;">📸 Toma captura y comparte tu certificado</p>
+            <a href="${waLink}" target="_blank" style="background:#25D366; color:white; text-decoration:none; padding:18px; border-radius:15px; font-weight:900; text-align:center;">INVITAR AMIGOS POR WHATSAPP 📱</a>
             
-            <footer class="ticket-footer">
-                <p>VIAJA POR PLANADAS © 2026</p>
-            </footer>
+            <button onclick="window.location.href='index.html'" style="background:transparent; color:#666; border:1px solid #333; padding:12px; border-radius:15px; cursor:pointer;">FINALIZAR</button>
         </div>
     `;
-
-    // Actualizar barra de progreso al 100%
     document.getElementById('p-bar').style.width = "100%";
 }
