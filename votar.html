@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calificar | Burger Fest</title>
+    <link rel="icon" type="image/png" href="Logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.8">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <div class="vignette"></div>
+    <div class="progress-bar" id="p-bar"></div>
+    <div class="main-wrapper">
+        <div class="container">
+            <header class="header-fest">
+                <img src="Logo.png" alt="Logo" class="logo-principal">
+                <p id="votos-info">SINCRONIZANDO...</p>
+            </header>
+            <main class="card-premium" id="main-card">
+                <div id="login-section" class="fade-in">
+                    <h2 id="rest-name">CARGANDO...</h2>
+                    <div class="form-group">
+                        <input type="text" id="username" placeholder="TU NOMBRE">
+                        <input type="tel" id="phone" placeholder="CELULAR (10 DÍGITOS)">
+                        <input type="text" id="code" placeholder="CÓDIGO DE TICKET" maxlength="6">
+                    </div>
+                    <button id="btn-validar" onclick="validarIngreso()" class="btn-action">ENTRAR A VOTAR 🔥</button>
+                </div>
+                <div id="vote-section" style="display:none;" class="fade-in">
+                    <div class="stars">
+                        <span onclick="setRating(1)">★</span><span onclick="setRating(2)">★</span><span onclick="setRating(3)">★</span><span onclick="setRating(4)">★</span><span onclick="setRating(5)">★</span>
+                    </div>
+                    <p id="rating-label">Toca una estrella</p>
+                    <button id="btn-votar" onclick="enviarVoto()" class="btn-action gold" disabled>CONFIRMAR MI VOTO</button>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="script.js?v=1.8"></script>
+</body>
+</html>

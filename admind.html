@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Control - Burguer Fest</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #121212; color: white; font-family: sans-serif; text-align: center; }
+        .container { max-width: 800px; margin: auto; padding: 20px; }
+        canvas { background: #1e1e1e; border-radius: 15px; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Resultados en Vivo</h1>
+        <canvas id="graficaVotos"></canvas>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwcCFXtJqWL55ExHFDti3G3Ri18mvNJuU",
+            authDomain: "burguerfest.firebaseapp.com",
+            projectId: "burguerfest",
+            databaseURL: "https://burguerfest-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const ctx = document.getElementById('graficaVotos').getContext('2d');
+        let chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Obsesión', 'M. Hongo', 'Fercho', 'Gourmet', 'Javar', 'Cielito', 'Gorrión'],
+                datasets: [{
+                    label: 'Votos Totales',
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    backgroundColor: '#ffbc0d'
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+
+        db.ref('votos').on('value', (snapshot) => {
+            const data = snapshot.val();
+            const conteo = [0, 0, 0, 0, 0, 0, 0];
+            if(data) {
+                for(let i=1; i<=7; i++) {
+                    if(data[i]) conteo[i-1] = Object.keys(data[i]).length;
+                }
+            }
+            chart.data.datasets[0].data = conteo;
+            chart.update();
+        });
+    </script>
+</body>
+</html> 

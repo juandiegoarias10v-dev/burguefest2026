@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Planadas Burger Fest 2026</title>
+    <link rel="icon" type="image/png" href="Logo.png">
+    <link rel="apple-touch-icon" href="Logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style-principal.css?v=2.0">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+    <div class="activity-ticker">
+        <div class="ticker-wrap">
+            <span id="ticker-text">🔥 ¡El festival ha comenzado! • Escanea el QR en tu local favorito • 8 Restaurantes compitiendo • ¡Vota ya! • 🍔</span>
+        </div>
+    </div>
+
+    <div class="vignette"></div>
+    <div class="fire-bg"></div>
+
+    <div class="wrapper">
+        <header class="main-header">
+            <img src="Logo.png" alt="Logo Fest" class="main-logo">
+            <div class="stats-container">
+                <div class="stat-box">
+                    <p>VOTOS REGISTRADOS</p>
+                    <h2 id="votos-totales">0</h2>
+                </div>
+            </div>
+            <div class="countdown-box">
+                <p>EL CIERRE ES EN:</p>
+                <div id="timer">...</div>
+            </div>
+        </header>
+
+        <section class="steps-section">
+            <div class="step"><div class="step-num">1</div><p>PIDE TU BURGER</p></div>
+            <div class="step"><div class="step-num">2</div><p>USA EL QR</p></div>
+            <div class="step"><div class="step-num">3</div><p>CALIFICA</p></div>
+        </section>
+
+        <section class="restaurantes-section">
+            <div class="section-header">
+                <h2>PARTICIPANTES</h2>
+                <div class="line"></div>
+            </div>
+            <div class="grid-restaurantes" id="grid-rest"></div>
+        </section>
+
+        <footer class="footer-fest">
+            <div class="organizador">
+                <p class="org-label">ORGANIZA:</p>
+                <h3 class="org-name">VIAJA POR PLANADAS</h3>
+            </div>
+            <div class="divider"></div>
+            <p class="vote-instruction">VOTA ESCANEANDO EL QR DEL LOCAL</p>
+            <div class="sponsors-grid">
+                <img src="patro1.png" alt="Sponsor">
+                <img src="patro2.png" alt="Sponsor">
+                <img src="patro3.png" alt="Sponsor">
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwcCFXtJqWL55ExHFDti3G3Ri18mvNJuU",
+            authDomain: "burguerfest.firebaseapp.com",
+            projectId: "burguerfest",
+            databaseURL: "https://burguerfest-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const restaurantes = [
+            { id: 1, nombre: "LA OBSESIÓN", logo: "laobcecion.png" },
+            { id: 2, nombre: "MISTER HONGO", logo: "MISTERHONGO.png" },
+            { id: 3, nombre: "EL BARRIL DEL FERCHO", logo: "BARRILFERCHO.png", campeon: true },
+            { id: 4, nombre: "SABOR GOURMET", logo: "SABORGOURMET.png" },
+            { id: 5, nombre: "JAVAR", logo: "JAVAR.png" },
+            { id: 6, nombre: "CIELITO LINDO", logo: "CIELITOLINDO.png" },
+            { id: 7, nombre: "CAFÉ GORRIÓN", logo: "cafegorrion.png" },
+            { id: 8, nombre: "PEDREGAL", logo: "PEDREGAL.png" }
+        ];
+
+        const grid = document.getElementById('grid-rest');
+        restaurantes.forEach(r => {
+            const claseC = r.campeon ? 'is-campeon' : '';
+            const b = r.campeon ? '<div class="badge-campeon">🏆 CAMPEÓN 2025</div>' : '';
+            grid.innerHTML += `<div class="rest-card ${claseC}">${b}<div class="logo-wrap"><img src="${r.logo}"></div><h4>${r.nombre}</h4></div>`;
+        });
+
+        database.ref('contadores').on('value', (snap) => {
+            let total = 0;
+            if (snap.val()) Object.values(snap.val()).forEach(v => total += v);
+            document.getElementById('votos-totales').innerText = total.toLocaleString();
+            if(total > 0) document.getElementById('ticker-text').innerText = `🔥 ¡Ya llevamos ${total} votos! Sigue probando y calificando • 🍔`;
+        });
+
+        const fechaCierre = new Date("May 10, 2026 23:59:59").getTime();
+        setInterval(() => {
+            const d = fechaCierre - new Date().getTime();
+            const dias = Math.floor(d / 86400000);
+            const horas = Math.floor((d % 86400000) / 3600000);
+            const mins = Math.floor((d % 3600000) / 60000);
+            const segs = Math.floor((d % 60000) / 1000);
+            document.getElementById("timer").innerHTML = `${dias}d ${horas}h ${mins}m ${segs}s`;
+        }, 1000);
+    </script>
+</body>
+</html>
